@@ -5,3 +5,28 @@
 
 **정적 클래스를 이용한 싱글턴 패턴**
 정적 클래스를 이용하는 벙법이 싱글턴 패턴을 이용하는 방법과 가장 차이가 나는 점은 객체를 전혀 생성하지 않고 메소드를 사용한다는 점이다. 아무 문제 없이 counter 변수가 스레드 5개 덕분에 안전하게 공유되어 사용될 수 있음을 알  수 있다. 더욱이 정적 메서드를 사용하므로 일반적으로 실행할때 바인딩되는(컴파일 타임에 바인딩 되는) 인스턴스 메서드를 사용하는 것보다 성능 면에서 우수하다고 할 수 있다.
+
+정적 메서드는 인터페이스에서 사용할 수 없다. 인터페이스를 사용하는 주된 이유는 대체 구현이 필요한 경우다. 이는 특히 모의 객체를 사용해 단위 태스트를 수행할 때 매우 중요하다.
+
+null을 반환한다면 클라이언트는 이 null 을 체크하는 로직을 만들어야한다.
+Optional은 검사 예외와 취지가 비슷하다. 즉, 반환 값이 없을 수도 있음을 API 사용자에게 명확히 알려준다. 비 검사 예외를 던지거나 null을 반환한다면 API사용자가 그 사실을 인지하지 못해 끔직한 결과로 이어질 수 있다. 하지만 검사 예외를 던지면 클라이언트에서는 반드시 이에 대처하는 코드를 작성해넣어야 한다.(이펙티브 자바 328p)
+
+메서드가 옵셔널을 반환한다면 클라이언트는 값을 받지 못했을 때 취할 행동을 선택해야 하낟. 그중 하나는 기본값을 설정하는 방법이다.
+```String lastWordInlexicon = max(words).orElse("단어 없음...");```
+
+또한 상황에 맞는 예외를 던질 수 있다. 다음 코드에서 실제 예외가 아니라 예외 팩터리(?)를 건넨 것에 주목하자. 이렇게 하면 예외가 실제로 발생하지 않는 한 예외 생성 비용은 들지 않는다.
+```Toy myToy = max(toys).orElseThrow(TemperTantrumException::new);```
+
+옵셔널애 항상 값이 채워져 있다고 확신한다면 그냥 곧바로 값을 꺼내 사용하는 서택지도 있다. 다만 잘못 판단한 것이라면 NoSuchElementException이 발생할 것이다.
+```Element lastNobleGas = max(Element.NOBLE_GASES).get();```
+
+#### isPresent를 쓴 코드 중 상당수는 앞서 언급한 메서드들로 대체할 수 있으며, 그렇게 하면 더 짧고 명확하고 용법ㅂ에 맞는 코드가 된다.
+```
+Optional<ProcessHandle> parentProcess = ph.parent();
+System.out.println("부모 PID: " + (parentProcess.**isPresent()** ? String.valueOf(parentProcess.get().pid() : "N/A") )
+```
+이 코드는 Optional의 map을 사용하여 다음처럼 다듬을 수 있다.
+```
+System.out.println("부모 PID: " + ph.parent().map(h -> String.valueOf(h.pid()).orElse("N/A")
+```
+스트림을 사용한다면 옵셔널들을 Stream<Optional<T>>로 받아서, 그중 체워진 옵셔널들에서 값을 뽑아 Stream<T>에 건네 담아 처리하는 경우가 드물지 않다. 다음과 같이 바꾸자.
